@@ -1,0 +1,54 @@
+# BBB minimal on debian buster
+#
+# Note, this docker image is non-functional. Its only purpose is to demonstrate
+# that bigbluebutton is installable using the mock-packages included in this
+# repository.
+FROM debian:buster
+
+ENV DEBIAN_FRONTEND="noninteractive"
+
+RUN apt-get update \
+    && apt-get dist-upgrade -y \
+    && apt-get install -y --no-install-recommends \
+        apt-transport-https \
+        ca-certificates \
+        curl \
+        gnupg2 \
+        net-tools \
+        software-properties-common
+
+# BBB repo
+RUN curl https://ubuntu.bigbluebutton.org/repo/bigbluebutton.asc | apt-key add -
+COPY buster/sources.list.d/contrib.list buster/sources.list.d/bigbluebutton.list /etc/apt/sources.list.d/
+
+# yq ppa
+RUN LC_ALL=C.UTF-8 apt-key adv --keyserver hkps://keyserver.ubuntu.com --recv-keys CC86BB64
+RUN LC_ALL=C.UTF-8 add-apt-repository ppa:rmescandon/yq
+
+# Some postinst scripts need /etc/lsb-release (should be /etc/os-release)
+RUN ln -s /etc/os-release /etc/lsb-release
+
+# Some postinst scripts need user and group bigbluebutton and freeswitch
+RUN adduser --disabled-password --system --group --gecos '' --home /var/lib/bigbluebutton bigbluebutton
+RUN adduser --disabled-password --system --group --gecos '' --home /var/freeswitch freeswitch
+
+# Dummy directories to satisfy postinst script
+RUN mkdir -p /var/freeswitch/meetings /var/kurento/recordings /var/kurento/screenshare
+
+# Config files from bbb-client
+RUN mkdir -p /etc/nginx/sites-available /etc/bigbluebutton/nginx
+COPY etc/nginx/sites-available/bigbluebutton /etc/nginx/sites-available/
+COPY \
+    etc/bigbluebutton/nginx/sip.nginx \
+    etc/bigbluebutton/nginx/client \
+    /etc/bigbluebutton/nginx/
+
+# Fake old stuff (red5 and freeswitch custom build)
+RUN apt-get install -y --no-install-recommends equivs devscripts
+
+COPY dpkg dpkg
+RUN for f in dpkg/*/debian/control; do equivs-build $f; done
+RUN dpkg -i *.deb
+
+RUN apt-get update
+RUN apt-get install -y --no-install-recommends bigbluebutton bbb-html5

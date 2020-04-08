@@ -1,0 +1,14 @@
+---
+language: minimal
+dist: bionic
+
+services:
+  - docker
+
+env:
+  - CODENAME=bionic
+  - CODENAME=buster
+  - CODENAME=xenial
+
+script:
+  - docker build -f Dockerfile.$CODENAME -t bbb-minimal:$CODENAME .

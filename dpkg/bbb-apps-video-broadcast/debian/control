@@ -1,0 +1,8 @@
+Section: default
+Priority: extra
+Standards-Version: 0.0.0
+
+Package: bbb-apps-video-broadcast
+Version: 9:9.9.9-999
+Maintainer: lo+github@znerol.ch
+Description: Fake package replacing bbb-apps-video-broadcast
